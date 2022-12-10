@@ -1,12 +1,123 @@
 use std::collections::{HashMap, HashSet};
 
+use std::fs;
+use utils::read_input;
+
 mod utils;
 
 fn main() {
-    d3();
+    d6();
 }
 
-fn d4() {}
+fn d6() {
+    let buffer = fs::read_to_string("input/6.txt".to_string())
+        .expect("Unable to read file.")
+        .chars()
+        .collect::<Vec<char>>();
+
+    let marker_size = 14;
+
+    let mut start_of_packet = 0;
+
+    for (i, window) in buffer.windows(marker_size).enumerate() {
+        let w: HashSet<&char> = HashSet::from_iter(window.clone().iter());
+
+        if w.len() == marker_size {
+            start_of_packet = i + marker_size;
+            break;
+        }
+    }
+
+    println!("start of packet: {}", start_of_packet)
+}
+
+fn d5() {
+    //     [M]             [Z]     [V]
+    //     [Z]     [P]     [L]     [Z] [J]
+    // [S] [D]     [W]     [W]     [H] [Q]
+    // [P] [V] [N] [D]     [P]     [C] [V]
+    // [H] [B] [J] [V] [B] [M]     [N] [P]
+    // [V] [F] [L] [Z] [C] [S] [P] [S] [G]
+    // [F] [J] [M] [G] [R] [R] [H] [R] [L]
+    // [G] [G] [G] [N] [V] [V] [T] [Q] [F]
+    //  1   2   3   4   5   6   7   8   9
+
+    let mut stacks: Vec<Vec<char>> = Vec::new();
+
+    let stack_contents = vec![
+        "GFVHPS", "GJFBVDZM", "GMLJN", "NGZVDWP", "VRCB", "VRSMPWLZ", "THP", "QRSNCHZV", "FLGPVQJ",
+    ];
+
+    for stack in stack_contents.iter() {
+        stacks.push(stack.chars().collect::<Vec<char>>());
+    }
+
+    let moves = utils::read_input("input/5.txt".to_string());
+
+    for move_line in moves.iter() {
+        let mut mv = move_line.split(" ");
+
+        mv.next();
+        let amount: usize = mv.next().unwrap().parse().unwrap();
+        mv.next();
+        let from: usize = mv.next().unwrap().parse().unwrap();
+        mv.next();
+        let to: usize = mv.next().unwrap().parse().unwrap();
+
+        let mut transfer_stack = Vec::new();
+
+        for _ in 0..amount {
+            let item = stacks[from - 1].pop().unwrap();
+            transfer_stack.push(item);
+        }
+        for _ in 0..amount {
+            let item = transfer_stack.pop().unwrap();
+            stacks[to - 1].push(item);
+        }
+    }
+
+    let mut top_items = "".to_string();
+
+    for stack in stacks.iter_mut() {
+        top_items.push(stack.pop().unwrap());
+    }
+
+    println!("Top items: {top_items}");
+}
+
+fn d4() {
+    let pairs = utils::read_input("input/4.txt".to_string());
+
+    let mut fully_contained = 0;
+    let mut overlapping = 0;
+
+    for pair in pairs.iter() {
+        let ab: Vec<&str> = pair.split(",").collect();
+
+        let a: Vec<u16> = ab[0]
+            .split("-")
+            .map(|x| x.parse::<u16>().unwrap())
+            .collect();
+        let b: Vec<u16> = ab[1]
+            .split("-")
+            .map(|x| x.parse::<u16>().unwrap())
+            .collect();
+
+        if (a[0] <= b[0] && a[1] >= b[1]) || (a[0] >= b[0] && a[1] <= b[1]) {
+            fully_contained += 1;
+        }
+
+        if (a[0] >= b[0] && a[0] <= b[1])
+            || (a[1] >= b[0] && a[1] <= b[1])
+            || (b[0] >= a[0] && b[0] <= a[1])
+            || (b[1] >= a[0] && b[1] <= a[1])
+        {
+            overlapping += 1;
+        }
+    }
+    println!("Pairs fully contained: {}", fully_contained);
+    println!("Pairs overlapping: {}", overlapping);
+}
 
 fn d3() {
     let rucksacks = utils::read_input("input/3.txt".to_string());
