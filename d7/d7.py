@@ -3,10 +3,10 @@ def main():
         cmdlines = f.readlines()
         cmdlines = [line.strip() for line in cmdlines]
 
-    root = Dir("/", None)
-    cwd = root
+    root = Dir("ROOT", None)
+    cwd = None
     
-    for i, line in enumerate(cmdlines, 1):
+    for line in cmdlines:
         parts = line.split(" ")
 
         if line.startswith("$"):
@@ -18,35 +18,48 @@ def main():
                         case "..":
                             cwd = cwd.parent
                         case _:
-                            new_dir = Dir(parts[2], cwd)
-                            cwd.dirs.append(new_dir)
-                            cwd = new_dir
+                            for dir in cwd.dirs:
+                                if dir.name == parts[2]:
+                                    cwd = dir
+                                    break
+
+                            else:
+                                raise ValueError("Dir not found")
 
                 case "ls":
                     continue
 
         else:
             if parts[0] == "dir":
-                # cwd.dirs.append(Dir(parts[1], cwd))
-                pass
+                cwd.dirs.append(Dir(parts[1], cwd))
 
             else:
                 cwd.files.append(File(parts[1], int(parts[0])))
 
     print(root.get_size())
 
-    dirs = root.get_subdirs_below(100000)
+    dirs = root.get_subdirs_below(100_000)
 
     for d in dirs:
         print(d)
-    print(sum([dir.get_size() for dir in dirs]))
-    
+    print(sum(dirs))
+
+    space_needed = 30_000_000 - (70_000_000 - root.get_size()) 
+    print(space_needed)
+    dirs = root.get_subdirs_above(space_needed)
+    print(sorted(dirs)[0].get_size())
+
 
 class File:
     def __init__(self, name, size) -> None:
         self.name = name
         self.size = size
 
+    def __repr__(self) -> str:
+        return f"File [{self.name}] ({self.size})"
+
+    def __radd__(self, other):
+        return self.size + other
 
 class Dir:
     def __init__(self, name: str, parent) -> None:
@@ -55,11 +68,14 @@ class Dir:
         self.files = []
         self.dirs = []
 
-    def get_size(self):
-        size = 0
+    def __radd__(self, other):
+        return other + self.get_size()
 
-        for file in self.files:
-            size += file.size
+    def __lt__(self, other):
+        return self.get_size() < other.get_size()
+
+    def get_size(self):
+        size = sum(self.files)
 
         for dir in self.dirs:
             size += dir.get_size()
@@ -81,8 +97,18 @@ class Dir:
             if dir.get_size() <= size:
                 dirs.append(dir)
             
-            else:
-                dirs.extend(dir.get_subdirs_below(size))
+            dirs.extend(dir.get_subdirs_below(size))
+
+        return dirs
+
+    def get_subdirs_above(self, size):
+        dirs = []
+
+        for dir in self.dirs:
+            if dir.get_size() >= size:
+                dirs.append(dir)
+            
+            dirs.extend(dir.get_subdirs_above(size))
 
         return dirs
 
